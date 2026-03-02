@@ -4,6 +4,11 @@ A terminal app that fetches your Steam library and uses **Gemini AI** to recomme
 
 Built with [charmbracelet/huh](https://github.com/charmbracelet/huh) for interactive TUI forms.
 
+## Demo
+
+![recco-demo-an](https://github.com/user-attachments/assets/3dca522e-31ba-48bf-91ab-c77e9c1eea92)
+
+
 ## Setup
 
 1. **Steam API Key** → https://steamcommunity.com/dev/apikey

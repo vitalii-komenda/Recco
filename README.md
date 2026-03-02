@@ -31,8 +31,8 @@ go run .
 Or build a binary:
 
 ```sh
-go build -o steam-bubbles .
-./steam-bubbles
+go build -o recco .
+./recco
 ```
 
 ## How it works

@@ -7,12 +7,55 @@ import (
 	"os/exec"
 	"runtime"
 
-	"github.com/charmbracelet/bubbles/table"
+	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
 	"steam-bubbles/internal/domain"
 )
+
+type recItem struct {
+	rec domain.Recommendation
+}
+
+func (r recItem) Title() string {
+	return lipgloss.NewStyle().Bold(true).Foreground(colorWhite).Render(r.rec.Name) +
+		lipgloss.NewStyle().Foreground(colorTeal).Italic(true).Render("  ["+r.rec.Platform+"]")
+}
+
+func (r recItem) Description() string { return r.rec.Reason }
+func (r recItem) FilterValue() string { return r.rec.Name }
+
+type recsModel struct {
+	list list.Model
+}
+
+func (m recsModel) Init() tea.Cmd { return nil }
+
+func (m recsModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "ctrl+c", "q", "esc":
+			return m, tea.Quit
+		case "enter":
+			if item, ok := m.list.SelectedItem().(recItem); ok {
+				searchURL := "https://store.steampowered.com/search/?term=" + url.QueryEscape(item.rec.Name)
+				openBrowser(searchURL)
+			}
+		}
+	case tea.WindowSizeMsg:
+		m.list.SetSize(msg.Width-4, msg.Height-4)
+	}
+
+	var cmd tea.Cmd
+	m.list, cmd = m.list.Update(msg)
+	return m, cmd
+}
+
+func (m recsModel) View() string {
+	return RecsBoxStyle.Render(m.list.View())
+}
 
 func RenderResults(selected []domain.Game, recommendations []domain.Recommendation) {
 	fmt.Println()
@@ -31,99 +74,48 @@ func RenderResults(selected []domain.Game, recommendations []domain.Recommendati
 		return
 	}
 
-	columns := []table.Column{
-		{Title: "Name", Width: 30},
-		{Title: "Reason", Width: 90},
-		{Title: "Platform", Width: 20},
+	items := make([]list.Item, len(recommendations))
+	for i, rec := range recommendations {
+		items[i] = recItem{rec: rec}
 	}
 
-	var rows []table.Row
-	for _, rec := range recommendations {
-		rows = append(rows, table.Row{rec.Name, rec.Reason, rec.Platform})
-	}
-
-	t := table.New(
-		table.WithColumns(columns),
-		table.WithRows(rows),
-		table.WithFocused(true),
-
-		table.WithHeight(len(recommendations)+1),
-	)
-
-	s := table.DefaultStyles()
-	s.Header = s.Header.
-		BorderStyle(lipgloss.NormalBorder()).
-		BorderForeground(colorTeal).
-		BorderBottom(true).
-		Bold(true)
-	s.Selected = s.Selected.
+	delegate := list.NewDefaultDelegate()
+	delegate.ShowDescription = true
+	delegate.SetSpacing(1)
+	delegate.Styles.SelectedTitle = delegate.Styles.SelectedTitle.
 		Foreground(colorWhite).
-		Background(colorPurple).
-		Bold(false)
-	t.SetStyles(s)
+		BorderForeground(colorPurple)
+	delegate.Styles.SelectedDesc = delegate.Styles.SelectedDesc.
+		Foreground(lipgloss.Color("#D1D5DB")).
+		BorderForeground(colorPurple)
 
-	m := model{table: t}
-	if _, err := tea.NewProgram(m).Run(); err != nil {
+	l := list.New(items, delegate, 100, 30)
+	l.Title = "✨  Gemini Recommendations"
+	l.Styles.Title = RecsTitleStyle
+	l.SetShowStatusBar(false)
+	l.SetFilteringEnabled(true)
+	l.SetShowHelp(true)
+
+	m := recsModel{list: l}
+	if _, err := tea.NewProgram(m, tea.WithAltScreen()).Run(); err != nil {
 		fmt.Println("Error running program:", err)
 		os.Exit(1)
 	}
 }
 
-type model struct {
-	table table.Model
-}
-
-func (m model) Init() tea.Cmd { return nil }
-
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var cmd tea.Cmd
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "esc", "q", "ctrl+c":
-			return m, tea.Quit
-		case "enter":
-			row := m.table.SelectedRow()
-			if row != nil {
-				name := row[0]
-				searchURL := "https://store.steampowered.com/search/?term=" + url.QueryEscape(name)
-				openBrowser(searchURL)
-			}
-		case "up", "k":
-			if m.table.Cursor() == 0 && len(m.table.Rows()) > 0 {
-				m.table.SetCursor(len(m.table.Rows()) - 1)
-				return m, nil
-			}
-		case "down", "j":
-			if m.table.Cursor() == len(m.table.Rows())-1 && len(m.table.Rows()) > 0 {
-				m.table.SetCursor(0)
-				return m, nil
-			}
-		}
-	}
-	m.table, cmd = m.table.Update(msg)
-	return m, cmd
-}
-
-func (m model) View() string {
-	helpText := PlaytimeStyle.Render("  enter to open in Steam • ↑/↓ to scroll • q to quit")
-	return RecsBoxStyle.Render(m.table.View()) + "\n" + helpText + "\n"
-}
-
-func openBrowser(url string) {
+func openBrowser(rawURL string) {
 	var err error
 	switch runtime.GOOS {
 	case "linux":
-		err = exec.Command("xdg-open", url).Start()
+		err = exec.Command("xdg-open", rawURL).Start()
 	case "windows":
-		err = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
+		err = exec.Command("rundll32", "url.dll,FileProtocolHandler", rawURL).Start()
 	case "darwin":
-		err = exec.Command("open", url).Start()
+		err = exec.Command("open", rawURL).Start()
 	default:
 		err = fmt.Errorf("unsupported platform")
 	}
 	if err != nil {
-		// Silently fallback if it fails, or log it if there's a good place for it
 		_ = err
 	}
 }

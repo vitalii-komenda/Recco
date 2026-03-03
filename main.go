@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"os"
 
@@ -13,9 +14,23 @@ import (
 	"steam-bubbles/internal/models"
 )
 
-func main() {
-	ctx := context.Background()
+var (
+	version = "dev"
+	commit  = "none"
+	date    = "unknown"
+)
 
+func main() {
+	showVersion := flag.Bool("version", false, "print version information")
+	flag.BoolVar(showVersion, "v", false, "print version information")
+	flag.Parse()
+
+	if *showVersion {
+		fmt.Printf("recco version=%s commit=%s date=%s\n", version, commit, date)
+		return
+	}
+
+	ctx := context.Background()
 	cfg := config.Load()
 
 	factory := func(cfg config.Config) (domain.GameRepository, domain.Recommender) {

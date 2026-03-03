@@ -1,0 +1,57 @@
+version: 2
+
+project_name: recco
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: recco
+    main: .
+    binary: recco
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
+
+archives:
+  - id: default
+    formats:
+      - tar.gz
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+
+brews:
+  - repository:
+      owner: vitalii-komenda
+      name: homebrew-recco
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    directory: Formula
+    homepage: "https://github.com/vitalii-komenda/Recco"
+    description: "A terminal app that recommends Steam games using Gemini AI"
+    license: "MIT"
+    install: |
+      bin.install "recco"
+    test: |
+      assert_match version.to_s, shell_output("#{bin}/recco --version", 2)

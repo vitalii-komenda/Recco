@@ -66,6 +66,9 @@ func handleCredentials(m *models.AppModel) error {
 	if err := m.Config.Validate(); err != nil {
 		return fmt.Errorf("invalid configuration: %w", err)
 	}
+	if err := m.Config.SaveInKeyring(); err != nil {
+		fmt.Printf("Could not set keyring %v", err)
+	}
 
 	advance(m, models.StepFetchGames)
 	return nil

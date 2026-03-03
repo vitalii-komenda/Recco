@@ -38,6 +38,13 @@ func CredentialFields(cfg *config.Config) []huh.Field {
 		)
 	}
 
+	fields = append(fields,
+		huh.NewInput().
+			Title("Gemini Model").
+			Description("e.g. gemini-pro-latest, gemini-flash-latest (default)").
+			Value(&cfg.GeminiModel),
+	)
+
 	return fields
 }
 

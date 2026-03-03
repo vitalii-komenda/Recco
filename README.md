@@ -35,6 +35,16 @@ go build -o recco .
 ./recco
 ```
 
+## Install with Homebrew
+
+```sh
+brew install --cask vitalii-komenda/recco/recco
+```
+hack to remove quarantine flag as it's not certified yet:
+```
+xattr -d com.apple.quarantine $(which recco)
+```
+
 ## How it works
 
 1. Fetches your Steam library via the `IPlayerService/GetOwnedGames` API

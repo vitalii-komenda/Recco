@@ -21,16 +21,16 @@ builds:
     ldflags:
       - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
 
-    hooks:
-      post:
-        - cmd: |
-            sh -c 'if [ "{{ .Os }}" = "darwin" ]; then
-              if command -v codesign >/dev/null 2>&1; then
-                codesign --force --deep --options runtime -s - "{{ .Path }}"
-              elif command -v rcodesign >/dev/null 2>&1; then
-                rcodesign sign "{{ .Path }}"
-              fi
-            fi'
+    # hooks:
+    #   post:
+    #     - cmd: |
+    #         sh -c 'if [ "{{ .Os }}" = "darwin" ]; then
+    #           if command -v codesign >/dev/null 2>&1; then
+    #             codesign --force --deep --options runtime -s - "{{ .Path }}"
+    #           elif command -v rcodesign >/dev/null 2>&1; then
+    #             rcodesign sign "{{ .Path }}"
+    #           fi
+    #         fi'
 
 archives:
   - id: default

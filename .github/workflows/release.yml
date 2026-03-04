@@ -22,6 +22,13 @@ jobs:
         with:
           go-version-file: go.mod
 
+      - name: Install rcodesign
+        run: |
+          RCODESIGN_VERSION=0.31.0
+          curl -Lo /tmp/rcodesign.tar.gz https://github.com/indygreg/apple-codesign/releases/download/v${RCODESIGN_VERSION}/apple-codesign-${RCODESIGN_VERSION}-x86_64-unknown-linux-musl.tar.gz
+          tar -xzf /tmp/rcodesign.tar.gz -C /tmp
+          mv /tmp/apple-codesign-${RCODESIGN_VERSION}-x86_64-unknown-linux-musl/rcodesign /usr/local/bin/
+
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
